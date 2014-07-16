@@ -1,8 +1,12 @@
 require_relative './fixed_parser'
+require 'fluent/mixin/type_converter'
 
 class Fluent::ParserOutput < Fluent::Output
   Fluent::Plugin.register_output('parser', self)
 
+  config_param :types, :string, :default => nil
+  config_param :types_delimiter, :string, :default => ','
+  config_param :types_label_delimiter, :string, :default => ':'
   config_param :tag, :string, :default => nil
   config_param :remove_prefix, :string, :default => nil
   config_param :add_prefix, :string, :default => nil
@@ -12,6 +16,8 @@ class Fluent::ParserOutput < Fluent::Output
   config_param :replace_invalid_sequence, :bool, :default => false
   config_param :hash_value_field, :string, :default => nil
 
+  include Fluent::HandleTagNameMixin
+  include Fluent::Mixin::TypeConverter
   attr_reader :parser
 
   def initialize
@@ -75,7 +81,9 @@ class Fluent::ParserOutput < Fluent::Output
         r = r ? record.merge(r) : record
       end
       if r
-        Fluent::Engine.emit(tag, t, r)
+        emit_tag = tag.dup
+        filter_record(emit_tag, t, r)
+        Fluent::Engine.emit(emit_tag, t, r)
       end
     end
 

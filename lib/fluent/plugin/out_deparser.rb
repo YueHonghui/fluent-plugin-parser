@@ -1,6 +1,11 @@
+require 'fluent/mixin/type_converter'
+
 class Fluent::DeparserOutput < Fluent::Output
   Fluent::Plugin.register_output('deparser', self)
 
+  config_param :types, :string, :default => nil
+  config_param :types_delimiter, :string, :default => ','
+  config_param :types_label_delimiter, :string, :default => ':'
   config_param :tag, :string, :default => nil
   config_param :remove_prefix, :string, :default => nil
   config_param :add_prefix, :string, :default => nil
@@ -8,12 +13,16 @@ class Fluent::DeparserOutput < Fluent::Output
   config_param :format_key_names, :string
   config_param :key_name, :string, :default => 'message'
   config_param :reserve_data, :bool, :default => false
-
+  
+  include Fluent::HandleTagNameMixin
+  include Fluent::Mixin::TypeConverter
   def april_fool_emit(tag, es, chain)
     es.each {|time,record|
       keys = record.keys.shuffle
       new_record = {@key_name => keys.map{|k| record[k]}.join(' ')}
-      Fluent::Engine.emit(@tag, time, new_record)
+      emit_tag = @tag.dup
+      filter_record(emit_tag, time, new_record)
+      Fluent::Engine.emit(emit_tag, time, new_record)
     }
     chain.next
   end
@@ -81,12 +90,16 @@ class Fluent::DeparserOutput < Fluent::Output
     if @reserve_data
       es.each {|time,record|
         record.update({@key_name => (@format % @format_key_names.map{|k| record[k]})})
-        Fluent::Engine.emit(tag, time, record)
+        emit_tag = tag.dup
+        filter_record(emit_tag, time, record)
+        Fluent::Engine.emit(emit_tag, time, record)
       }
     else
       es.each {|time,record|
         new_record = {@key_name => (@format % @format_key_names.map{|k| record[k]})}
-        Fluent::Engine.emit(tag, time, new_record)
+        emit_tag = tag.dup
+        filter_record(emit_tag, time, new_record)
+        Fluent::Engine.emit(emit_tag, time, new_record)
       }
     end
     chain.next
