@@ -6,7 +6,7 @@ Gem::Specification.new do |gem|
   gem.email         = ["tagomoris@gmail.com"]
   gem.description   = %q{fluentd plugin to parse single field, or to combine log structure into single field}
   gem.summary       = %q{plugin to parse/combine fluentd log messages}
-  gem.homepage      = "https://github.com/tagomoris/fluent-plugin-parser"
+  gem.homepage      = "https://github.com/YueHonghui/fluent-plugin-parser"
   gem.license       = "APLv2"
 
   gem.files         = `git ls-files`.split($\)
